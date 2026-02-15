@@ -23,7 +23,7 @@ class Transaction {
 
   String get formattedAmount {
     final symbol = isIncome ? '+' : '-';
-    return '$symbol\$${absoluteAmount.toStringAsFixed(2)}';
+    return '$symbol₦${absoluteAmount.toStringAsFixed(2)}';
   }
 
   Map<String, dynamic> toJson() {

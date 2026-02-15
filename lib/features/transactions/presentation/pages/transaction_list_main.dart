@@ -6,6 +6,7 @@ import '../../../../core/app_sizes.dart';
 import '../../../../core/colors.dart';
 import '../../domain/entities/transaction_category.dart';
 import '../providers/transaction_provider.dart';
+import '../widgets/balance_card_widget.dart';
 import '../widgets/category_filter_chip.dart';
 import '../widgets/empty_transactions_widget.dart';
 import '../widgets/transaction_card.dart';
@@ -20,6 +21,7 @@ class TransactionListScreen extends ConsumerStatefulWidget {
 
 class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -31,6 +33,8 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _focusNode.dispose();
+
     super.dispose();
   }
 
@@ -39,11 +43,27 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await ref.read(refreshProvider.notifier).refresh();
+    final notifier = ref.read(transactionsNotifierProvider.notifier);
+    notifier.refresh();
+    await Future.delayed(const Duration(seconds: 1));
+  }
+
+  void _onCategorySelected(String category) {
+    ref.read(selectedCategoryProvider.notifier).state = category;
+  }
+
+  void _onTransactionTapped(String transactionId) {
+    context.push('/home/transaction/$transactionId');
+  }
+
+  void _onAddTransactionTapped() {
+    context.push('/home/add');
   }
 
   Future<void> _handleDelete(String transactionId) async {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.showSnackBar(
       const SnackBar(
         content: Row(
           children: [
@@ -59,17 +79,19 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             Text('Deleting transaction...'),
           ],
         ),
-        duration: Duration(seconds: 1),
+        duration: Duration(days: 365),
       ),
     );
 
-    final repository = ref.read(transactionRepositoryProvider);
-    final success = await repository.deleteTransaction(transactionId);
+    final notifier = ref.read(transactionsNotifierProvider.notifier);
+    final success = await notifier.deleteTransaction(transactionId);
 
     if (!mounted) return;
 
+    messenger.hideCurrentSnackBar();
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Transaction deleted successfully'),
           backgroundColor: AppColors.success,
@@ -77,7 +99,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Failed to delete transaction'),
           backgroundColor: AppColors.error,
@@ -86,133 +108,156 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     }
   }
 
-  void _onCategorySelected(String category) {
-    ref.read(selectedCategoryProvider.notifier).state = category;
-  }
-
-  void _onTransactionTapped(String transactionId) {
-    context.push('/home/transaction/$transactionId');
-  }
-
-  void _onAddTransactionTapped() {
-    context.push('/home/add');
-  }
-
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(filteredTransactionsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
-    final isRefreshing = ref.watch(refreshProvider);
+
+    final allTransactions = ref.watch(transactionsNotifierProvider);
+
+    final currentBalance = allTransactions.fold(
+      0.0,
+      (sum, transaction) => sum + transaction.amount,
+    );
+
+    final totalIncome = allTransactions
+        .where((t) => t.amount > 0)
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    final totalExpenses = allTransactions
+        .where((t) => t.amount < 0)
+        .fold(0.0, (sum, t) => sum + t.amount.abs());
 
     final categories = ['All', ...TransactionCategory.allCategories];
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: Container(),
         title: const Text(
           'Transactions',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
-        leading: Container(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingMd),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by merchant...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  borderSide: BorderSide(color: AppColors.grey300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  borderSide: BorderSide(color: AppColors.grey300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  borderSide: BorderSide(color: AppColors.primary, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingMd,
-                  vertical: AppSizes.paddingMd,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              key: ValueKey(transactions.length),
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingMd,
-              ),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                return CategoryFilterChip(
-                  label: category,
-                  isSelected: selectedCategory == category,
-                  onTap: () => _onCategorySelected(category),
-                );
-              },
-            ),
-          ),
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: AppColors.primary,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () {
+                  _focusNode.unfocus();
+                },
+                child: Column(
+                  children: [
+                    BalanceCard(
+                      currentBalance: currentBalance,
+                      totalIncome: totalIncome,
+                      totalExpenses: totalExpenses,
+                    ),
 
-          const SizedBox(height: AppSizes.paddingSm),
-
-          Expanded(
-            child: transactions.isEmpty
-                ? EmptyTransactionsState(
-                    message: _searchController.text.isNotEmpty
-                        ? 'No transactions found'
-                        : 'No transactions yet',
-                    subtitle: _searchController.text.isNotEmpty
-                        ? 'Try searching for a different merchant'
-                        : 'Start by adding your first transaction',
-                  )
-                : RefreshIndicator(
-                    onRefresh: _handleRefresh,
-                    color: AppColors.primary,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(
-                        top: AppSizes.paddingSm,
-                        bottom: 80, // Space for FAB
+                    Padding(
+                      padding: const EdgeInsets.all(AppSizes.paddingMd),
+                      child: TextField(
+                        focusNode: _focusNode,
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search by merchant...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            borderSide: BorderSide(color: AppColors.grey300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            borderSide: BorderSide(color: AppColors.grey300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            borderSide: BorderSide(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.paddingMd,
+                            vertical: AppSizes.paddingMd,
+                          ),
+                        ),
                       ),
-                      itemCount: transactions.length,
-                      itemBuilder: (context, index) {
+                    ),
+
+                    SizedBox(
+                      height: 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingMd,
+                        ),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          return CategoryFilterChip(
+                            label: category,
+                            isSelected: selectedCategory == category,
+                            onTap: () => _onCategorySelected(category),
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSizes.paddingSm),
+                  ],
+                ),
+              ),
+            ),
+            transactions.isEmpty
+                ? SliverFillRemaining(
+                    child: EmptyTransactionsState(
+                      message: _searchController.text.isNotEmpty
+                          ? 'No transactions found'
+                          : 'No transactions yet',
+                      subtitle: _searchController.text.isNotEmpty
+                          ? 'Try searching for a different merchant'
+                          : 'Start by adding your first transaction',
+                    ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.only(
+                      top: AppSizes.paddingSm,
+                      bottom: 80, // Space for FAB
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
                         final transaction = transactions[index];
                         return TransactionCard(
                           transaction: transaction,
                           onTap: () => _onTransactionTapped(transaction.id),
                           onDelete: _handleDelete,
                         );
-                      },
+                      }, childCount: transactions.length),
                     ),
                   ),
-          ),
-        ],
+          ],
+        ),
       ),
 
       floatingActionButton: FloatingActionButton.extended(

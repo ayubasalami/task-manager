@@ -32,6 +32,10 @@ class TransactionRepository {
     return _cachedTransactions!;
   }
 
+  void invalidateCache() {
+    _cachedTransactions = null;
+  }
+
   Transaction? getTransactionById(String id) {
     try {
       return getTransactions().firstWhere((t) => t.id == id);
@@ -44,19 +48,16 @@ class TransactionRepository {
     try {
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final transactions = getTransactions();
+      final transactions = List<Transaction>.from(getTransactions());
       transactions.insert(0, transaction);
+
       _cachedTransactions = transactions;
 
       final saved = await _saveTransactions();
-      if (!saved) {
-        transactions.removeAt(0);
-        _cachedTransactions = transactions;
-        return false;
-      }
+      if (!saved) return false;
 
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }
@@ -65,28 +66,45 @@ class TransactionRepository {
     try {
       await Future.delayed(const Duration(milliseconds: 300));
 
-      final transactions = getTransactions();
+      final transactions = List<Transaction>.from(getTransactions());
       final index = transactions.indexWhere((t) => t.id == id);
 
-      if (index == -1) {
-        return false;
-      }
+      if (index == -1) return false;
 
-      final removedTransaction = transactions[index];
       transactions.removeAt(index);
       _cachedTransactions = transactions;
 
       final saved = await _saveTransactions();
-      if (!saved) {
-        transactions.insert(index, removedTransaction);
-        _cachedTransactions = transactions;
-        return false;
-      }
+      if (!saved) return false;
 
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
+  }
+
+  double getCurrentBalance() {
+    final transactions = getTransactions();
+    if (transactions.isEmpty) return 0.0;
+
+    return transactions.fold(
+      0.0,
+      (sum, transaction) => sum + transaction.amount,
+    );
+  }
+
+  double getTotalIncome() {
+    final transactions = getTransactions();
+    return transactions
+        .where((t) => t.isIncome)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double getTotalExpenses() {
+    final transactions = getTransactions();
+    return transactions
+        .where((t) => t.isExpense)
+        .fold(0.0, (sum, t) => sum + t.absoluteAmount);
   }
 
   List<Transaction> searchByMerchant(String query) {
@@ -154,7 +172,7 @@ final List<Transaction> _mockTransactions = [
     amount: -45.50,
     merchant: 'Whole Foods',
     category: 'Groceries',
-    date: DateTime(2026, 2, 10),
+    date: DateTime(2024, 2, 10),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -162,7 +180,7 @@ final List<Transaction> _mockTransactions = [
     amount: -120.00,
     merchant: 'Shell Gas Station',
     category: 'Transportation',
-    date: DateTime(2026, 2, 9),
+    date: DateTime(2024, 2, 9),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -170,7 +188,7 @@ final List<Transaction> _mockTransactions = [
     amount: -32.00,
     merchant: 'Pizza Hut',
     category: 'Dining',
-    date: DateTime(2026, 2, 8),
+    date: DateTime(2024, 2, 8),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -178,7 +196,7 @@ final List<Transaction> _mockTransactions = [
     amount: -89.99,
     merchant: 'Amazon',
     category: 'Shopping',
-    date: DateTime(2026, 2, 7),
+    date: DateTime(2024, 2, 7),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -186,7 +204,7 @@ final List<Transaction> _mockTransactions = [
     amount: -25.00,
     merchant: 'Netflix',
     category: 'Entertainment',
-    date: DateTime(2026, 2, 6),
+    date: DateTime(2024, 2, 6),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -194,7 +212,7 @@ final List<Transaction> _mockTransactions = [
     amount: -150.00,
     merchant: 'CVS Pharmacy',
     category: 'Healthcare',
-    date: DateTime(2026, 2, 5),
+    date: DateTime(2024, 2, 5),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -202,7 +220,7 @@ final List<Transaction> _mockTransactions = [
     amount: -75.50,
     merchant: 'Electric Company',
     category: 'Utilities',
-    date: DateTime(2026, 2, 4),
+    date: DateTime(2024, 2, 4),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -210,7 +228,7 @@ final List<Transaction> _mockTransactions = [
     amount: -28.99,
     merchant: 'Trader Joes',
     category: 'Groceries',
-    date: DateTime(2026, 2, 3),
+    date: DateTime(2024, 2, 3),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -218,7 +236,7 @@ final List<Transaction> _mockTransactions = [
     amount: -55.00,
     merchant: 'Uber',
     category: 'Transportation',
-    date: DateTime(2026, 2, 2),
+    date: DateTime(2024, 2, 2),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -226,7 +244,7 @@ final List<Transaction> _mockTransactions = [
     amount: -42.50,
     merchant: 'Chipotle',
     category: 'Dining',
-    date: DateTime(2026, 2, 1),
+    date: DateTime(2024, 2, 1),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -234,7 +252,7 @@ final List<Transaction> _mockTransactions = [
     amount: -19.99,
     merchant: 'Spotify',
     category: 'Entertainment',
-    date: DateTime(2026, 1, 31),
+    date: DateTime(2024, 1, 31),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -242,7 +260,7 @@ final List<Transaction> _mockTransactions = [
     amount: -125.00,
     merchant: 'Target',
     category: 'Shopping',
-    date: DateTime(2026, 1, 30),
+    date: DateTime(2024, 1, 30),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -250,7 +268,7 @@ final List<Transaction> _mockTransactions = [
     amount: -65.00,
     merchant: 'Safeway',
     category: 'Groceries',
-    date: DateTime(2026, 1, 29),
+    date: DateTime(2024, 1, 29),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -258,7 +276,7 @@ final List<Transaction> _mockTransactions = [
     amount: -85.00,
     merchant: 'Lyft',
     category: 'Transportation',
-    date: DateTime(2026, 1, 28),
+    date: DateTime(2024, 1, 28),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -266,7 +284,7 @@ final List<Transaction> _mockTransactions = [
     amount: -38.75,
     merchant: 'Starbucks',
     category: 'Dining',
-    date: DateTime(2026, 1, 27),
+    date: DateTime(2024, 1, 27),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -274,7 +292,7 @@ final List<Transaction> _mockTransactions = [
     amount: -200.00,
     merchant: 'Doctor Visit',
     category: 'Healthcare',
-    date: DateTime(2026, 1, 26),
+    date: DateTime(2024, 1, 26),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -282,7 +300,7 @@ final List<Transaction> _mockTransactions = [
     amount: -45.00,
     merchant: 'Water Bill',
     category: 'Utilities',
-    date: DateTime(2026, 1, 25),
+    date: DateTime(2024, 1, 25),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -290,7 +308,7 @@ final List<Transaction> _mockTransactions = [
     amount: -99.99,
     merchant: 'Best Buy',
     category: 'Shopping',
-    date: DateTime(2026, 1, 24),
+    date: DateTime(2024, 1, 24),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -298,7 +316,7 @@ final List<Transaction> _mockTransactions = [
     amount: -15.99,
     merchant: 'AMC Theaters',
     category: 'Entertainment',
-    date: DateTime(2026, 1, 23),
+    date: DateTime(2024, 1, 23),
     status: TransactionStatus.completed,
   ),
   Transaction(
@@ -306,7 +324,7 @@ final List<Transaction> _mockTransactions = [
     amount: -52.30,
     merchant: 'Costco',
     category: 'Groceries',
-    date: DateTime(2026, 1, 22),
+    date: DateTime(2024, 1, 22),
     status: TransactionStatus.completed,
   ),
 ];

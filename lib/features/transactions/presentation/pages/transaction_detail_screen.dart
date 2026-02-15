@@ -41,9 +41,6 @@ class TransactionDetailScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -209,25 +206,6 @@ class TransactionDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSizes.paddingLg),
               child: Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Edit feature coming soon!'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSizes.paddingMd,
-                        ),
-                        side: BorderSide(color: AppColors.grey300),
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: AppSizes.paddingMd),
                   Expanded(
                     child: OutlinedButton.icon(
@@ -313,16 +291,14 @@ class TransactionDetailScreen extends ConsumerWidget {
                 ),
               );
 
-              final repository = ref.read(transactionRepositoryProvider);
-              final success = await repository.deleteTransaction(transactionId);
+              final notifier = ref.read(transactionsNotifierProvider.notifier);
+              final success = await notifier.deleteTransaction(transactionId);
 
               if (!context.mounted) return;
 
               messenger.hideCurrentSnackBar();
 
               if (success) {
-                await ref.read(refreshProvider.notifier).refresh();
-
                 messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Transaction deleted successfully'),

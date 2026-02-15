@@ -106,6 +106,88 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
+    final formState = ref.read(addTransactionFormProvider);
+    if (formState.isExpense) {
+      final repository = ref.read(transactionRepositoryProvider);
+      final currentBalance = repository.getCurrentBalance();
+
+      if (amount > currentBalance) {
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: AppColors.warning),
+                SizedBox(width: 8),
+                Text('Low Balance Warning'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This expense (₦${amount.toStringAsFixed(2)}) is more than your current balance (₦${currentBalance.toStringAsFixed(2)}).',
+                  style: TextStyle(fontSize: 15),
+                ),
+                SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Your balance will become negative.',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Do you want to continue anyway?',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.warning,
+                ),
+                child: Text('Continue Anyway'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldContinue != true) {
+          return;
+        }
+      }
+    }
+
     ref.read(addTransactionFormProvider.notifier).setAmount(amount);
     ref
         .read(addTransactionFormProvider.notifier)
@@ -125,8 +207,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     if (!mounted) return;
 
     if (success) {
-      await ref.read(refreshProvider.notifier).refresh();
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transaction added successfully!'),
@@ -134,31 +214,34 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           duration: Duration(seconds: 2),
         ),
       );
+
       context.pop();
     } else {
-      if (!success) {
-        final error = ref.read(addTransactionFormProvider).error;
-        final shouldRetry = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Failed to Save'),
-            content: Text(error ?? 'Could not save transaction...'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        );
+      final error = ref.read(addTransactionFormProvider).error;
 
-        if (shouldRetry == true) {
-          _submitForm();
-        }
+      final shouldRetry = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Failed to Save'),
+          content: Text(
+            error ??
+                'Could not save transaction. This might be due to storage permissions or insufficient space.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRetry == true && mounted) {
+        _submitForm();
       }
     }
   }
@@ -247,8 +330,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Amount *',
                       hintText: '0.00',
-                      prefixText: '\$ ',
-                      suffixIcon: Icon(Icons.attach_money),
+                      prefixText: '₦ ',
                       helperText: 'Enter transaction amount',
                     ),
                     validator: (value) {

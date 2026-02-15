@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../core/app_sizes.dart';
-import '../data/onboarding_model.dart';
+import '../../../../core/app_sizes.dart';
+import '../../data/onboarding_model.dart';
 
 class OnboardingPageWidget extends StatelessWidget {
   final OnboardingModel page;

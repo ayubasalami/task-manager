@@ -7,6 +7,7 @@ enum TransactionCategory {
   entertainment,
   healthcare,
   shopping,
+  other,
   utilities;
 
   String get displayName {
@@ -23,6 +24,8 @@ enum TransactionCategory {
         return 'Healthcare';
       case TransactionCategory.shopping:
         return 'Shopping';
+      case TransactionCategory.other:
+        return 'Other';
       case TransactionCategory.utilities:
         return 'Utilities';
     }
@@ -44,6 +47,8 @@ enum TransactionCategory {
         return Icons.shopping_bag;
       case TransactionCategory.utilities:
         return Icons.lightbulb;
+      case TransactionCategory.other:
+        return Icons.info_outlined;
     }
   }
 
@@ -63,6 +68,8 @@ enum TransactionCategory {
         return const Color(0xFFE91E63);
       case TransactionCategory.utilities:
         return const Color(0xFFFFEB3B);
+      case TransactionCategory.other:
+        return const Color(0xFFFF9800);
     }
   }
 

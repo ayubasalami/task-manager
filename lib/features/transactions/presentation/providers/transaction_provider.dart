@@ -1,3 +1,4 @@
+import 'package:expense_tracker/features/transactions/presentation/providers/transactions_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -8,36 +9,33 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   return TransactionRepository();
 });
 
-final transactionsProvider = Provider<List<Transaction>>((ref) {
-  final repository = ref.watch(transactionRepositoryProvider);
-  return repository.getTransactions();
-});
+final transactionsNotifierProvider =
+    StateNotifierProvider<TransactionsNotifier, List<Transaction>>((ref) {
+      final repository = ref.watch(transactionRepositoryProvider);
+      return TransactionsNotifier(repository);
+    });
 
 final selectedCategoryProvider = StateProvider<String>((ref) => 'All');
-
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
 final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
-  final repository = ref.watch(transactionRepositoryProvider);
+  final allTransactions = ref.watch(transactionsNotifierProvider);
   final selectedCategory = ref.watch(selectedCategoryProvider);
   final searchQuery = ref.watch(searchQueryProvider);
 
-  return repository.getFilteredTransactions(
-    category: selectedCategory,
-    searchQuery: searchQuery,
-  );
-});
+  var transactions = allTransactions;
 
-class RefreshNotifier extends StateNotifier<bool> {
-  RefreshNotifier() : super(false);
-
-  Future<void> refresh() async {
-    state = true;
-    await Future.delayed(const Duration(seconds: 1));
-    state = false;
+  if (selectedCategory.toLowerCase() != 'all') {
+    transactions = transactions.where((t) {
+      return t.category.toLowerCase() == selectedCategory.toLowerCase();
+    }).toList();
   }
-}
 
-final refreshProvider = StateNotifierProvider<RefreshNotifier, bool>((ref) {
-  return RefreshNotifier();
+  if (searchQuery.isNotEmpty) {
+    transactions = transactions.where((t) {
+      return t.merchant.toLowerCase().contains(searchQuery.toLowerCase());
+    }).toList();
+  }
+
+  return transactions;
 });

@@ -1,9 +1,9 @@
+import 'package:expense_tracker/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../domain/entities/transaction_category.dart';
 import '../../domain/entities/transaction_model.dart';
-import 'transaction_provider.dart';
 
 class AddTransactionFormState {
   final double? amount;
@@ -105,8 +105,8 @@ class AddTransactionFormNotifier
         status: TransactionStatus.completed,
       );
 
-      final repository = ref.read(transactionRepositoryProvider);
-      final success = await repository.addTransaction(transaction);
+      final notifier = ref.read(transactionsNotifierProvider.notifier);
+      final success = await notifier.addTransaction(transaction);
 
       if (!success) {
         state = state.copyWith(
@@ -122,7 +122,7 @@ class AddTransactionFormNotifier
     } catch (e) {
       state = state.copyWith(
         isSubmitting: false,
-        error: 'Failed to add transaction: ${e.toString()}',
+        error: 'An unexpected error occurred: ${e.toString()}',
       );
       return false;
     }

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../core/app_strings.dart';
-import '../../../core/colors.dart';
+import '../../../../core/app_strings.dart';
+import '../../../../core/colors.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

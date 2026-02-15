@@ -85,7 +85,6 @@ class CategoryPickerBottomSheet extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Icon
                         Container(
                           width: 48,
                           height: 48,

@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../../core/app_sizes.dart';
-import '../../../core/app_strings.dart';
-import '../../../core/colors.dart';
-import '../../../core/utils/app_storage.dart';
+import '../../../../core/app_sizes.dart';
+import '../../../../core/app_strings.dart';
+import '../../../../core/colors.dart';
+import '../../../../core/utils/app_storage.dart';
 import '../provider/onboarding_provider.dart';
 import '../widgets/onboarding_widget.dart';
 
