@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/onboarding/pages/onboarding_screen.dart';
 import '../../features/onboarding/pages/splash_screen.dart';
+import '../../features/transactions/presentation/pages/add_transaction_screen.dart';
 import '../../features/transactions/presentation/pages/transaction_list_main.dart';
 import '../utils/app_storage.dart';
 
@@ -42,12 +43,7 @@ class AppRouter {
           GoRoute(
             path: 'add',
             name: 'add-transaction',
-            builder: (context, state) {
-              return Scaffold(
-                appBar: AppBar(title: const Text('Add Transaction')),
-                body: const Center(child: Text('Add screen - TODO')),
-              );
-            },
+            builder: (context, state) => const AddTransactionScreen(),
           ),
         ],
       ),

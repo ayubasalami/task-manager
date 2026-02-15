@@ -1,36 +1,78 @@
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
+
+import '../../../../core/utils/app_storage.dart';
 import '../../domain/entities/transaction_model.dart';
 
 class TransactionRepository {
+  static const String _transactionsKey = 'transactions_list';
+
+  List<Transaction>? _cachedTransactions;
+
   List<Transaction> getTransactions() {
-    return _mockTransactions;
+    if (_cachedTransactions != null) {
+      return _cachedTransactions!;
+    }
+
+    final stored = AppStorage.getString(_transactionsKey);
+    if (stored != null && stored.isNotEmpty) {
+      try {
+        final List<dynamic> jsonList = jsonDecode(stored);
+        _cachedTransactions = jsonList
+            .map((json) => Transaction.fromJson(json as Map<String, dynamic>))
+            .toList();
+        return _cachedTransactions!;
+      } catch (e) {
+        _cachedTransactions = _mockTransactions;
+        return _cachedTransactions!;
+      }
+    }
+
+    _cachedTransactions = List.from(_mockTransactions);
+    _saveTransactions();
+    return _cachedTransactions!;
   }
 
   Transaction? getTransactionById(String id) {
     try {
-      return _mockTransactions.firstWhere((t) => t.id == id);
+      return getTransactions().firstWhere((t) => t.id == id);
     } catch (e) {
       return null;
     }
   }
 
   Future<bool> addTransaction(Transaction transaction) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _mockTransactions.insert(0, transaction);
-    return true;
+    try {
+      final transactions = getTransactions();
+      transactions.insert(0, transaction);
+      _cachedTransactions = transactions;
+
+      final saved = await _saveTransactions();
+      if (!saved) {
+        transactions.removeAt(0);
+        _cachedTransactions = transactions;
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   List<Transaction> searchByMerchant(String query) {
-    if (query.isEmpty) return _mockTransactions;
+    if (query.isEmpty) return getTransactions();
 
-    return _mockTransactions.where((transaction) {
+    return getTransactions().where((transaction) {
       return transaction.merchant.toLowerCase().contains(query.toLowerCase());
     }).toList();
   }
 
   List<Transaction> filterByCategory(String category) {
-    if (category.toLowerCase() == 'all') return _mockTransactions;
+    if (category.toLowerCase() == 'all') return getTransactions();
 
-    return _mockTransactions.where((transaction) {
+    return getTransactions().where((transaction) {
       return transaction.category.toLowerCase() == category.toLowerCase();
     }).toList();
   }
@@ -39,14 +81,12 @@ class TransactionRepository {
     String? category,
     String? searchQuery,
   }) {
-    var transactions = _mockTransactions;
-
+    var transactions = getTransactions();
     if (category != null && category.toLowerCase() != 'all') {
       transactions = transactions.where((t) {
         return t.category.toLowerCase() == category.toLowerCase();
       }).toList();
     }
-
     if (searchQuery != null && searchQuery.isNotEmpty) {
       transactions = transactions.where((t) {
         return t.merchant.toLowerCase().contains(searchQuery.toLowerCase());
@@ -54,6 +94,27 @@ class TransactionRepository {
     }
 
     return transactions;
+  }
+
+  Future<bool> _saveTransactions() async {
+    if (_cachedTransactions == null) return true;
+
+    try {
+      final jsonList = _cachedTransactions!
+          .map((transaction) => transaction.toJson())
+          .toList();
+      final jsonString = jsonEncode(jsonList);
+      final success = await AppStorage.setString(_transactionsKey, jsonString);
+      return success;
+    } catch (e) {
+      debugPrint('Error saving transactions: $e');
+      return false;
+    }
+  }
+
+  Future<void> clearTransactions() async {
+    _cachedTransactions = null;
+    await AppStorage.remove(_transactionsKey);
   }
 }
 

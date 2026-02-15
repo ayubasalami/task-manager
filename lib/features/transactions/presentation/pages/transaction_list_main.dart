@@ -70,6 +70,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
+        leading: Container(),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
