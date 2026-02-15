@@ -327,4 +327,12 @@ final List<Transaction> _mockTransactions = [
     date: DateTime(2024, 1, 22),
     status: TransactionStatus.completed,
   ),
+  Transaction(
+    id: '21',
+    amount: 10000,
+    merchant: 'Salary',
+    category: 'other',
+    date: DateTime(2024, 1, 23),
+    status: TransactionStatus.completed,
+  ),
 ];
