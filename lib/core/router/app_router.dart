@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/onboarding/pages/onboarding_screen.dart';
 import '../../features/onboarding/pages/splash_screen.dart';
+import '../../features/transactions/presentation/pages/transaction_list_main.dart';
 import '../utils/app_storage.dart';
 
 class AppRouter {
@@ -20,16 +21,41 @@ class AppRouter {
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
+
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) =>
-            const Placeholder(), // TODO: Replace with TransactionsListScreen
+        builder: (context, state) => const TransactionListScreen(),
+        routes: [
+          GoRoute(
+            path: 'transaction/:id',
+            name: 'transaction-detail',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return Scaffold(
+                appBar: AppBar(title: Text('Transaction $id')),
+                body: Center(child: Text('Detail screen - TODO')),
+              );
+            },
+          ),
+
+          GoRoute(
+            path: 'add',
+            name: 'add-transaction',
+            builder: (context, state) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Add Transaction')),
+                body: const Center(child: Text('Add screen - TODO')),
+              );
+            },
+          ),
+        ],
       ),
     ],
 
     redirect: (context, state) {
       final isSplashScreen = state.matchedLocation == '/';
+
       if (isSplashScreen) {
         return null;
       }
@@ -39,9 +65,11 @@ class AppRouter {
       if (!isOnboardingComplete && !isOnboardingScreen) {
         return '/onboarding';
       }
+
       if (isOnboardingComplete && isOnboardingScreen) {
         return '/home';
       }
+
       return null;
     },
   );
