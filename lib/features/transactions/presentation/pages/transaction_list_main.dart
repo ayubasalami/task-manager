@@ -42,6 +42,50 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     await ref.read(refreshProvider.notifier).refresh();
   }
 
+  Future<void> _handleDelete(String transactionId) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Deleting transaction...'),
+          ],
+        ),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final repository = ref.read(transactionRepositoryProvider);
+    final success = await repository.deleteTransaction(transactionId);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Transaction deleted successfully'),
+          backgroundColor: AppColors.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete transaction'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   void _onCategorySelected(String category) {
     ref.read(selectedCategoryProvider.notifier).state = category;
   }
@@ -119,6 +163,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           SizedBox(
             height: 50,
             child: ListView.builder(
+              key: ValueKey(transactions.length),
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.paddingMd,
@@ -161,6 +206,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                         return TransactionCard(
                           transaction: transaction,
                           onTap: () => _onTransactionTapped(transaction.id),
+                          onDelete: _handleDelete,
                         );
                       },
                     ),

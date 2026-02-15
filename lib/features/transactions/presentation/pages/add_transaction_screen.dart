@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/app_sizes.dart';
 import '../../../../core/colors.dart';
 import '../providers/add_transaction_provider.dart';
+import '../providers/transaction_provider.dart';
 import '../widgets/category_picker_bottom_sheet.dart';
 import '../widgets/transaction_type_toggle.dart';
 
@@ -124,6 +125,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     if (!mounted) return;
 
     if (success) {
+      await ref.read(refreshProvider.notifier).refresh();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transaction added successfully!'),

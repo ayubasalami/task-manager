@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:expense_tracker/features/transactions/presentation/pages/transaction_detail_screen.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/onboarding/pages/onboarding_screen.dart';
@@ -33,10 +33,7 @@ class AppRouter {
             name: 'transaction-detail',
             builder: (context, state) {
               final id = state.pathParameters['id']!;
-              return Scaffold(
-                appBar: AppBar(title: Text('Transaction $id')),
-                body: Center(child: Text('Detail screen - TODO')),
-              );
+              return TransactionDetailScreen(transactionId: id);
             },
           ),
 
