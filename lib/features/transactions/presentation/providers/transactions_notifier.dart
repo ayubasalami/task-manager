@@ -22,6 +22,20 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     return success;
   }
 
+  Future<bool> updateTransaction(
+    String id,
+    Transaction updatedTransaction,
+  ) async {
+    final success = await _repository.updateTransaction(id, updatedTransaction);
+
+    if (success) {
+      state = state.map((t) {
+        return t.id == id ? updatedTransaction.copyWith(id: id) : t;
+      }).toList();
+    }
+    return success;
+  }
+
   Future<bool> deleteTransaction(String id) async {
     final success = await _repository.deleteTransaction(id);
     if (success) {

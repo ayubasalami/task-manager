@@ -97,13 +97,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
             ),
-
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingXl,
+              padding: const EdgeInsets.only(
+                left: AppSizes.paddingXl,
+                right: AppSizes.paddingXl,
+                bottom: AppSizes.paddingMd,
               ),
               child: Column(
                 children: [
+                  // Page indicator
                   SmoothPageIndicator(
                     controller: _pageController,
                     count: pages.length,
@@ -118,6 +120,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
 
                   const SizedBox(height: AppSizes.paddingXl),
+
                   SizedBox(
                     width: double.infinity,
                     height: AppSizes.buttonHeightLg,

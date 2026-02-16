@@ -6,67 +6,89 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/app_sizes.dart';
 import '../../../../core/colors.dart';
-import '../providers/add_transaction_provider.dart';
+import '../../domain/entities/transaction_category.dart';
+import '../../domain/entities/transaction_model.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/category_picker_bottom_sheet.dart';
 import '../widgets/transaction_type_toggle.dart';
 
-class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+class EditTransactionScreen extends ConsumerStatefulWidget {
+  final String transactionId;
+
+  const EditTransactionScreen({super.key, required this.transactionId});
 
   @override
-  ConsumerState<AddTransactionScreen> createState() =>
-      _AddTransactionScreenState();
+  ConsumerState<EditTransactionScreen> createState() =>
+      _EditTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
+class _EditTransactionScreenState extends ConsumerState<EditTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _merchantController = TextEditingController();
-  final _notesController = TextEditingController();
+  late TextEditingController _amountController;
+  late TextEditingController _merchantController;
   final _amountFocusNode = FocusNode();
+
+  Transaction? _originalTransaction;
+  TransactionCategory? _selectedCategory;
+  DateTime? _selectedDate;
+  bool _isExpense = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    // Future.delayed(const Duration(milliseconds: 300), () {
-    //   if (mounted) {
-    //     _amountFocusNode.requestFocus();
-    //   }
-    // });
+    _loadTransaction();
+  }
+
+  void _loadTransaction() {
+    final repository = ref.read(transactionRepositoryProvider);
+    _originalTransaction = repository.getTransactionById(widget.transactionId);
+
+    if (_originalTransaction != null) {
+      final transaction = _originalTransaction!;
+
+      _amountController = TextEditingController(
+        text: transaction.absoluteAmount.toStringAsFixed(2),
+      );
+      _merchantController = TextEditingController(text: transaction.merchant);
+
+      _selectedCategory = TransactionCategory.fromString(transaction.category);
+      _selectedDate = transaction.date;
+      _isExpense = transaction.isExpense;
+    } else {
+      _amountController = TextEditingController();
+      _merchantController = TextEditingController();
+    }
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _merchantController.dispose();
-    _notesController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
   }
 
   void _showCategoryPicker() {
-    final currentCategory = ref.read(addTransactionFormProvider).category;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => CategoryPickerBottomSheet(
-        selectedCategory: currentCategory,
+        selectedCategory: _selectedCategory,
         onCategorySelected: (category) {
-          ref.read(addTransactionFormProvider.notifier).setCategory(category);
+          setState(() {
+            _selectedCategory = category;
+          });
         },
       ),
     );
   }
 
   Future<void> _selectDate() async {
-    final currentDate = ref.read(addTransactionFormProvider).selectedDate;
-
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: currentDate,
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -83,8 +105,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       },
     );
 
-    if (picked != null && picked != currentDate) {
-      ref.read(addTransactionFormProvider.notifier).setDate(picked);
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+      });
     }
   }
 
@@ -106,150 +130,71 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    final formState = ref.read(addTransactionFormProvider);
-    if (formState.isExpense) {
-      final repository = ref.read(transactionRepositoryProvider);
-      final currentBalance = repository.getCurrentBalance();
-
-      if (amount > currentBalance) {
-        final shouldContinue = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.warning, color: AppColors.warning),
-                SizedBox(width: 8),
-                Text('Low Balance Warning'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This expense (₦${amount.toStringAsFixed(2)}) is more than your current balance (₦${currentBalance.toStringAsFixed(2)}).',
-                  style: TextStyle(fontSize: 15),
-                ),
-                SizedBox(height: 12),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppColors.error,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Your balance will become negative.',
-                          style: TextStyle(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  'Do you want to continue anyway?',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.warning,
-                ),
-                child: Text('Continue Anyway'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldContinue != true) {
-          return;
-        }
-      }
-    }
-
-    ref.read(addTransactionFormProvider.notifier).setAmount(amount);
-    ref
-        .read(addTransactionFormProvider.notifier)
-        .setMerchant(_merchantController.text.trim());
-    ref
-        .read(addTransactionFormProvider.notifier)
-        .setNotes(
-          _notesController.text.trim().isNotEmpty
-              ? _notesController.text.trim()
-              : null,
-        );
-
-    final success = await ref
-        .read(addTransactionFormProvider.notifier)
-        .submitTransaction();
-
-    if (!mounted) return;
-
-    if (success) {
+    if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Transaction added successfully!'),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
+          content: Text('Please select a category'),
+          backgroundColor: AppColors.error,
         ),
       );
+      return;
+    }
 
-      context.pop();
-    } else {
-      final error = ref.read(addTransactionFormProvider).error;
+    setState(() {
+      _isSubmitting = true;
+    });
 
-      final shouldRetry = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Failed to Save'),
-          content: Text(
-            error ??
-                'Could not save transaction. This might be due to storage permissions or insufficient space.',
+    try {
+      final updatedTransaction = Transaction(
+        id: widget.transactionId,
+        amount: _isExpense ? -amount : amount,
+        merchant: _merchantController.text.trim(),
+        category: _selectedCategory!.displayName,
+        date: _selectedDate ?? DateTime.now(),
+        status: TransactionStatus.completed,
+      );
+      final notifier = ref.read(transactionsNotifierProvider.notifier);
+      final success = await notifier.updateTransaction(
+        widget.transactionId,
+        updatedTransaction,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction updated successfully!'),
+            backgroundColor: AppColors.success,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Retry'),
-            ),
-          ],
+        );
+        context.pop();
+      } else {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update transaction'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: AppColors.error,
         ),
       );
-
-      if (shouldRetry == true && mounted) {
-        _submitForm();
-      }
     }
   }
 
   Future<bool> _onWillPop() async {
-    if (_amountController.text.isNotEmpty ||
-        _merchantController.text.isNotEmpty ||
-        _notesController.text.isNotEmpty) {
+    if (_hasChanges()) {
       final shouldPop = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -275,9 +220,27 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     return true;
   }
 
+  bool _hasChanges() {
+    if (_originalTransaction == null) return false;
+
+    final transaction = _originalTransaction!;
+    return _amountController.text !=
+            transaction.absoluteAmount.toStringAsFixed(2) ||
+        _merchantController.text != transaction.merchant ||
+        _selectedCategory?.displayName != transaction.category ||
+        _selectedDate != transaction.date ||
+        _isExpense != transaction.isExpense;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final formState = ref.watch(addTransactionFormProvider);
+    if (_originalTransaction == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Transaction Not Found')),
+        body: const Center(child: Text('Transaction not found')),
+      );
+    }
+
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     return PopScope(
@@ -304,7 +267,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               },
             ),
             title: const Text(
-              'Add Transaction',
+              'Edit Transaction',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             elevation: 0,
@@ -349,6 +312,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   ),
 
                   const SizedBox(height: AppSizes.paddingLg),
+
                   TextFormField(
                     controller: _merchantController,
                     textCapitalization: TextCapitalization.words,
@@ -381,18 +345,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           labelText: 'Category *',
                           hintText: 'Select category',
                           suffixIcon: const Icon(Icons.arrow_drop_down),
-                          prefixIcon: formState.category != null
+                          prefixIcon: _selectedCategory != null
                               ? Icon(
-                                  formState.category!.icon,
-                                  color: formState.category!.color,
+                                  _selectedCategory!.icon,
+                                  color: _selectedCategory!.color,
                                 )
                               : const Icon(Icons.category),
                         ),
                         controller: TextEditingController(
-                          text: formState.category?.displayName ?? '',
+                          text: _selectedCategory?.displayName ?? '',
                         ),
                         validator: (value) {
-                          if (formState.category == null) {
+                          if (_selectedCategory == null) {
                             return 'Please select a category';
                           }
                           return null;
@@ -402,7 +366,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   ),
 
                   const SizedBox(height: AppSizes.paddingLg),
-
                   GestureDetector(
                     onTap: _selectDate,
                     child: AbsorbPointer(
@@ -413,14 +376,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           suffixIcon: Icon(Icons.calendar_today),
                         ),
                         controller: TextEditingController(
-                          text: dateFormat.format(formState.selectedDate),
+                          text: dateFormat.format(
+                            _selectedDate ?? DateTime.now(),
+                          ),
                         ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: AppSizes.paddingLg),
-
                   Text(
                     'Transaction Type',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -430,21 +394,24 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   ),
                   const SizedBox(height: AppSizes.paddingSm),
                   TransactionTypeToggle(
-                    isExpense: formState.isExpense,
+                    isExpense: _isExpense,
                     onChanged: (isExpense) {
-                      ref
-                          .read(addTransactionFormProvider.notifier)
-                          .setIsExpense(isExpense);
+                      setState(() {
+                        _isExpense = isExpense;
+                      });
                     },
                   ),
 
-                  const SizedBox(height: AppSizes.paddingXxl),
+                  const SizedBox(height: AppSizes.paddingLg),
+
+                  const SizedBox(height: AppSizes.paddingXl),
+
                   SizedBox(
                     width: double.infinity,
                     height: AppSizes.buttonHeightLg,
                     child: ElevatedButton(
-                      onPressed: formState.isSubmitting ? null : _submitForm,
-                      child: formState.isSubmitting
+                      onPressed: _isSubmitting ? null : _submitForm,
+                      child: _isSubmitting
                           ? const SizedBox(
                               width: 24,
                               height: 24,
@@ -455,7 +422,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                 ),
                               ),
                             )
-                          : const Text('Add Transaction'),
+                          : const Text('Update Transaction'),
                     ),
                   ),
 

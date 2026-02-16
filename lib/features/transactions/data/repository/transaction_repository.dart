@@ -144,6 +144,38 @@ class TransactionRepository {
     return transactions;
   }
 
+  Future<bool> updateTransaction(
+    String id,
+    Transaction updatedTransaction,
+  ) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      final transactions = getTransactions();
+      final index = transactions.indexWhere((t) => t.id == id);
+
+      if (index == -1) {
+        return false;
+      }
+
+      final oldTransaction = transactions[index];
+
+      transactions[index] = updatedTransaction.copyWith(id: id);
+      _cachedTransactions = transactions;
+
+      final saved = await _saveTransactions();
+      if (!saved) {
+        transactions[index] = oldTransaction;
+        _cachedTransactions = transactions;
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<bool> _saveTransactions() async {
     if (_cachedTransactions == null) return true;
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/onboarding/presentation/pages/onboarding_screen.dart';
 import '../../features/onboarding/presentation/pages/splash_screen.dart';
 import '../../features/transactions/presentation/pages/add_transaction_screen.dart';
+import '../../features/transactions/presentation/pages/edit_transaction_screen.dart';
 import '../../features/transactions/presentation/pages/transaction_list_main.dart';
 import '../utils/app_storage.dart';
 
@@ -22,7 +23,14 @@ class AppRouter {
         name: 'onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-
+      GoRoute(
+        path: '/home/transaction/:id/edit',
+        name: 'editTransaction',
+        builder: (context, state) {
+          final transactionId = state.pathParameters['id']!;
+          return EditTransactionScreen(transactionId: transactionId);
+        },
+      ),
       GoRoute(
         path: '/home',
         name: 'home',

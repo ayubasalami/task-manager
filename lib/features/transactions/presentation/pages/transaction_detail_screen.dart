@@ -206,7 +206,23 @@ class TransactionDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSizes.paddingLg),
               child: Row(
                 children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context.push('/home/transaction/${transactionId}/edit');
+                      },
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Edit'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.paddingMd,
+                        ),
+                        side: BorderSide(color: AppColors.grey300),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: AppSizes.paddingMd),
+
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
