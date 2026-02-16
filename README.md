@@ -113,12 +113,13 @@ Beyond the requirements, this app includes:
     <td><img src="screenshots/home.png" width="250"/></td>
     <td><img src="screenshots/details.png" width="250"/></td>
     <td><img src="screenshots/add.png" width="250"/></td>
-    <td><img src="screenshots/edit.png.png" width="250"/></td>
+    <td><img src="screenshots/edit.png" width="250"/></td>
   </tr>
   <tr>
     <td align="center"><b>Transaction List with Balance Card</b></td>
     <td align="center"><b>Transaction Detail</b></td>
     <td align="center"><b>Add Transaction Form</b></td>
+    <td align="center"><b>Edit Transaction</b></td>
   </tr>
 </table>
 
