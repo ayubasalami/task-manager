@@ -17,8 +17,8 @@ class TransactionDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.read(transactionRepositoryProvider);
-    final transaction = repository.getTransactionById(transactionId);
+    final notifier = ref.read(transactionsNotifierProvider.notifier);
+    final transaction = notifier.getTransactionById(transactionId);
 
     if (transaction == null) {
       return Scaffold(

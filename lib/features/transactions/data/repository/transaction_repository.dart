@@ -36,14 +36,6 @@ class TransactionRepository {
     _cachedTransactions = null;
   }
 
-  Transaction? getTransactionById(String id) {
-    try {
-      return getTransactions().firstWhere((t) => t.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
   Future<bool> addTransaction(Transaction transaction) async {
     try {
       await Future.delayed(const Duration(milliseconds: 500));

@@ -22,6 +22,14 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
     return success;
   }
 
+  Transaction? getTransactionById(String id) {
+    try {
+      return state.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> updateTransaction(
     String id,
     Transaction updatedTransaction,
@@ -42,6 +50,10 @@ class TransactionsNotifier extends StateNotifier<List<Transaction>> {
       _loadTransactions();
     }
     return success;
+  }
+
+  double getCurrentBalance() {
+    return state.fold<double>(0, (sum, t) => sum + t.amount);
   }
 
   void refresh() {

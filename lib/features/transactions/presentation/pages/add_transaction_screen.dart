@@ -29,11 +29,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    // Future.delayed(const Duration(milliseconds: 300), () {
-    //   if (mounted) {
-    //     _amountFocusNode.requestFocus();
-    //   }
-    // });
   }
 
   @override
@@ -108,8 +103,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     final formState = ref.read(addTransactionFormProvider);
     if (formState.isExpense) {
-      final repository = ref.read(transactionRepositoryProvider);
-      final currentBalance = repository.getCurrentBalance();
+      final currentBalance = ref
+          .read(transactionsNotifierProvider.notifier)
+          .getCurrentBalance();
 
       if (amount > currentBalance) {
         final shouldContinue = await showDialog<bool>(

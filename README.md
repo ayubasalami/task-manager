@@ -63,6 +63,7 @@ Beyond the requirements, this app includes:
 ### **2. Transaction Management**
 - **Add Transactions** - Full form with validation
 - **View Details** - Complete transaction information
+- **Edit Details** - Edit transaction information
 - **Delete Transactions** - Swipe left or use delete button
 - **Filter by Category** - 7 categories with visual icons
 - **Search by Merchant** - Real-time search
@@ -112,6 +113,7 @@ Beyond the requirements, this app includes:
     <td><img src="screenshots/home.png" width="250"/></td>
     <td><img src="screenshots/details.png" width="250"/></td>
     <td><img src="screenshots/add.png" width="250"/></td>
+    <td><img src="screenshots/edit.png.png" width="250"/></td>
   </tr>
   <tr>
     <td align="center"><b>Transaction List with Balance Card</b></td>
@@ -120,23 +122,52 @@ Beyond the requirements, this app includes:
   </tr>
 </table>
 
-Architectural Principles
+## 🏗 Architecture & Data Flow
 
-Separation of Concerns
+This application follows a **unidirectional data flow** with a single source of truth.
 
-Domain layer: Pure Dart entities (no Flutter dependencies)
-Data layer: Repository pattern for data access
-Presentation layer: UI and state management
+### Layers
+
+**Presentation Layer**
+- Flutter UI widgets
+- Reads state from Riverpod providers
+- Dispatches user actions to StateNotifiers
+- Never accesses repositories directly
+
+**State Layer**
+- `StateNotifier` owns and mutates application state
+- Acts as the single source of truth
+- Emits new immutable state on every change
+- Ensures UI stays reactive across screens
+
+**Data Layer**
+- Repository pattern abstracts persistence
+- SharedPreferences used as local storage
+- Repositories are injected into notifiers only
+- No UI access to data sources
+
+### Data Flow
+
+UI → StateNotifier → Repository → Local Storage  
+State updates → New state emitted → UI rebuilds automatically
+
+This design prevents:
+- Stale UI
+- Manual refresh hacks
+- Multiple sources of truth
+- Hidden state mutations
+
+### Why StateNotifier?
+
+StateNotifier was chosen to:
+- Enforce immutable state updates
+- Make state transitions explicit
+- Avoid accidental UI rebuild issues
+- Support predictable updates across list, detail, and edit screens
 
 
-State Management
 
-Riverpod for reactive state
-Provider pattern for dependency injection
-StateNotifier for complex state
-
-
-Navigation
+### Navigation
 
 GoRouter for declarative routing
 Type-safe navigation

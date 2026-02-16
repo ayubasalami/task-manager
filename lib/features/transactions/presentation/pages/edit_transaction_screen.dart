@@ -41,8 +41,8 @@ class _EditTransactionScreenState extends ConsumerState<EditTransactionScreen> {
   }
 
   void _loadTransaction() {
-    final repository = ref.read(transactionRepositoryProvider);
-    _originalTransaction = repository.getTransactionById(widget.transactionId);
+    final notifier = ref.read(transactionsNotifierProvider.notifier);
+    _originalTransaction = notifier.getTransactionById(widget.transactionId);
 
     if (_originalTransaction != null) {
       final transaction = _originalTransaction!;
