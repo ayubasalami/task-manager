@@ -36,6 +36,14 @@ A modern, feature-rich expense tracking application built with Flutter, demonstr
 - ✅ Date picker
 - ✅ Different keyboard types for different inputs
 - ✅ Save transaction to local storage
+- 
+- #### **D. Edit Transaction Screen**
+- ✅ Edits Transaction
+- ✅ Form with validation for all fields
+- ✅ Category picker
+- ✅ Date picker
+- ✅ Different keyboard types for different inputs
+- ✅ Save transaction to local storage
 
 ### **Bonus Features Implemented** 🎉
 
